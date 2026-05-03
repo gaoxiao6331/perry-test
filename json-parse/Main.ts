@@ -3,7 +3,6 @@ import path from "path";
 import { JSONParser } from "./JsonParse";
 
 const fileArg = process.argv[2];
-process.stderr.write(`[Main] argv=${JSON.stringify(process.argv)}\n`);
 
 const outputDirArg = process.argv[3];
 
@@ -33,17 +32,13 @@ if (!fileArg) {
 }
 
 const filePath = path.resolve(process.cwd(), fileArg);
-process.stderr.write(`[Main] loading file ${filePath}\n`);
 
 // 读取文件
 const jsonParser = new JSONParser();
-process.stderr.write(`[Main] parser created\n`);
 const jsonText = fs.readFileSync(filePath, "utf-8");
-process.stderr.write(`[Main] file loaded, length=${jsonText.length}\n`);
 
 // 解析
 const obj = jsonParser.parse(jsonText);
-process.stderr.write(`[Main] parse complete\n`);
 
 const cusPaserOutput = JSON.stringify(obj, null, 2);
 
@@ -55,12 +50,10 @@ if (outputDirArg) {
   const customOutputPath = path.join(outputDir, fileArg + "_custom.json");
   fs.mkdirSync(path.dirname(customOutputPath), { recursive: true });
   fs.writeFileSync(customOutputPath, cusPaserOutput);
-  process.stderr.write(`[Main] custom output written to ${customOutputPath}\n`);
 
   // 写原生的数据到文件
   const nativeOutputPath = path.join(outputDir, fileArg + "_native.json");
   fs.mkdirSync(path.dirname(nativeOutputPath), { recursive: true });
   fs.writeFileSync(nativeOutputPath, nativePaserOutput);
-  process.stderr.write(`[Main] native output written to ${nativeOutputPath}\n`);
 }
 

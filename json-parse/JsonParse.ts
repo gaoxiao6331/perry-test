@@ -21,12 +21,10 @@ class JSONParseError extends Error {
 export class JSONParser {
   private i = 0;
   private str = "";
-  private readonly debugEnabled = false;
 
   parse(input: string): JSONValue {
     this.str = input;
     this.i = 0;
-    this.debug("parse: start", { length: this.str.length });
 
     const value = this.parseValue();
     this.skipWhitespace();
@@ -34,7 +32,6 @@ export class JSONParser {
     if (this.i < this.str.length) {
       throw new JSONParseError("Unexpected trailing characters", this.i);
     }
-    this.debug("parse: finished", { index: this.i });
     return value;
   }
 
@@ -45,7 +42,6 @@ export class JSONParser {
     }
 
     const ch = this.peek();
-    this.debug("parseValue", { index: this.i, char: ch });
 
     if (ch === '"') return this.parseString();
     if (ch === '{') return this.parseObject();
@@ -59,7 +55,6 @@ export class JSONParser {
   }
 
   private parseObject(): JSONObject {
-    this.debug("parseObject: start", { index: this.i });
     this.expect('{');
     const obj: JSONObject = {};
 
@@ -70,7 +65,6 @@ export class JSONParser {
 
     if (this.peek() === '}') {
       this.i++;
-      this.debug("parseObject: empty object", { index: this.i });
       return obj;
     }
 
@@ -86,14 +80,12 @@ export class JSONParser {
       }
 
       const key = this.parseString();
-      this.debug("parseObject: key parsed", { key, index: this.i });
 
       this.skipWhitespace();
       this.expect(':');
 
       const value = this.parseValue();
       obj[key] = value;
-      this.debug("parseObject: value parsed", { key, index: this.i });
 
       this.skipWhitespace();
       if (this.i >= this.str.length) {
@@ -104,7 +96,6 @@ export class JSONParser {
 
       if (ch === '}') {
         this.i++;
-        this.debug("parseObject: end", { index: this.i });
         break;
       }
 
@@ -119,7 +110,6 @@ export class JSONParser {
   }
 
   private parseArray(): JSONArray {
-    this.debug("parseArray: start", { index: this.i });
     this.expect('[');
     const arr: JSONArray = [];
 
@@ -130,13 +120,11 @@ export class JSONParser {
 
     if (this.peek() === ']') {
       this.i++;
-      this.debug("parseArray: empty array", { index: this.i });
       return arr;
     }
 
     while (true) {
       arr.push(this.parseValue());
-      this.debug("parseArray: element parsed", { length: arr.length, index: this.i });
 
       this.skipWhitespace();
       if (this.i >= this.str.length) {
@@ -147,7 +135,6 @@ export class JSONParser {
 
       if (ch === ']') {
         this.i++;
-        this.debug("parseArray: end", { length: arr.length, index: this.i });
         break;
       }
 
@@ -162,7 +149,6 @@ export class JSONParser {
   }
 
   private parseString(): string {
-    this.debug("parseString: start", { index: this.i });
     this.expect('"');
 
     let result = "";
@@ -171,7 +157,6 @@ export class JSONParser {
       const ch = this.str[this.i++];
 
       if (ch === '"') {
-        this.debug("parseString: end", { index: this.i });
         return result;
       }
 
@@ -243,14 +228,12 @@ export class JSONParser {
       throw new JSONParseError("Invalid number", start);
     }
 
-    this.debug("parseNumber", { value: num, span: [start, this.i] });
     return num;
   }
 
   private parseLiteral(expected: string, value: any): any {
     if (this.str.startsWith(expected, this.i)) {
       this.i += expected.length;
-      this.debug("parseLiteral", { expected, index: this.i });
       return value;
     }
     throw new JSONParseError(`Expected ${expected}`, this.i);
@@ -283,17 +266,10 @@ export class JSONParser {
     if (this.i >= this.str.length || this.str[this.i] !== ch) {
       throw new JSONParseError(`Expected '${ch}'`, this.i);
     }
-    this.debug("expect", { expected: ch, index: this.i });
     this.i++;
   }
 
   private isDigit(ch: string): boolean {
-    return ch >= '0' && ch <= '9';
-  }
-
-  private debug(...args: unknown[]) {
-    if (this.debugEnabled) {
-      console.log("[JSONParser]", ...args);
-    }
+    return ch >= "0" && ch <= "9";
   }
 }
