@@ -14,7 +14,7 @@ const nativeOutputDir = path.resolve(nativeOutputArg);
 const nativeBinary = path.resolve(process.env.NATIVE_BINARY ?? "./native/Main");
 
 const customSuffix = `${inputFile}_custom.json`;
-const builtinSuffix = `${inputFile}_native.json`;
+const builtinSuffix = `${inputFile}_builtin.json`;
 
 const run = (cmd, args, options) =>
   execFileSync(cmd, args, { stdio: "inherit", ...options }); // 调用外部命令
@@ -45,7 +45,9 @@ const buildNode = () => run("pnpm", ["build"]); // 构建 Node 版本
 
 const runNode = () => {
   resetDir(nodeOutputDir);
-  run("node", [nodeMain, inputFile, nodeOutputArg]); // 运行 Node 主程序
+  run("node", [nodeMain, inputFile, nodeOutputArg], {
+    env: { ...process.env, FORCE_COLOR: "1" }
+  }); // 运行 Node 主程序
   diffPair(
     path.join(nodeOutputDir, customSuffix),
     path.join(nodeOutputDir, builtinSuffix)
@@ -59,7 +61,9 @@ const buildNative = () => {
 
 const runNative = () => {
   resetDir(nativeOutputDir);
-  run(nativeBinary, [inputFile, nativeOutputArg]); // 运行 Native 程序
+  run(nativeBinary, [inputFile, nativeOutputArg], {
+    env: { ...process.env, FORCE_COLOR: "1" }
+  }); // 运行 Native 程序
   diffPair(
     path.join(nativeOutputDir, customSuffix),
     path.join(nativeOutputDir, builtinSuffix)

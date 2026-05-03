@@ -38,22 +38,31 @@ const jsonParser = new JSONParser();
 const jsonText = fs.readFileSync(filePath, "utf-8");
 
 // 解析
-const obj = jsonParser.parse(jsonText);
+const parseStart = process.hrtime.bigint();
+const parsedValue = jsonParser.parse(jsonText);
+const parseEnd = process.hrtime.bigint();
+const parseDurationMs = Number(parseEnd - parseStart) / 1_000_000;
 
-const cusPaserOutput = JSON.stringify(obj, null, 2);
+const parseTimeMessage = `Parse time: ${parseDurationMs.toFixed(3)} ms`;
+const stdout = process.stdout;
+stdout.write(Buffer.from([0x1b, 0x5b, 0x31, 0x3b, 0x33, 0x35, 0x6d])); // ESC[1;35m
+stdout.write(Buffer.from(parseTimeMessage));
+stdout.write(Buffer.from([0x1b, 0x5b, 0x30, 0x6d, 0x0a])); // ESC[0m + newline
 
-const nativePaserOutput = JSON.stringify(JSON.parse(jsonText), null, 2);
+const customOutputJson = JSON.stringify(parsedValue, null, 2);
+
+const builtinOutputJson = JSON.stringify(JSON.parse(jsonText), null, 2);
 
 // 写数据到文件
 if (outputDirArg) {
   const outputDir = path.resolve(process.cwd(), outputDirArg);
   const customOutputPath = path.join(outputDir, fileArg + "_custom.json");
   fs.mkdirSync(path.dirname(customOutputPath), { recursive: true });
-  fs.writeFileSync(customOutputPath, cusPaserOutput);
+  fs.writeFileSync(customOutputPath, customOutputJson);
 
   // 写原生的数据到文件
-  const nativeOutputPath = path.join(outputDir, fileArg + "_native.json");
+  const nativeOutputPath = path.join(outputDir, fileArg + "_builtin.json");
   fs.mkdirSync(path.dirname(nativeOutputPath), { recursive: true });
-  fs.writeFileSync(nativeOutputPath, nativePaserOutput);
+  fs.writeFileSync(nativeOutputPath, builtinOutputJson);
 }
 
