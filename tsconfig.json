@@ -3,7 +3,7 @@
     "target": "ES2019",
     "module": "ESNext",
     "declaration": true,
-    "outDir": "dist",
+    "outDir": "nodejs",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,6 +14,7 @@
   "exclude": [
     "node_modules",
     "dist",
+    "nodejs",
     "**/*.d.ts",
     "**/*.test.ts",
     "**/*.spec.ts",

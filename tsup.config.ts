@@ -3,7 +3,7 @@ import path from "path";
 import { defineConfig } from "tsup";
 
 const ROOT = __dirname;
-const EXCLUDED_DIRS = new Set(["node_modules", "dist"]);
+const EXCLUDED_DIRS = new Set(["node_modules", "dist", "nodejs"]);
 const EXCLUDED_FILE_PATTERNS = [
   /\.d\.ts$/,
   /\.test\.ts$/,
@@ -12,7 +12,7 @@ const EXCLUDED_FILE_PATTERNS = [
 ];
 
 // Collect entry points dynamically so every directory under the repo root becomes a matching
-// bundle inside dist/, e.g. "json-parse/JsonParse.ts" -> "dist/json-parse/JsonParse.js".
+// bundle inside nodejs/, e.g. "json-parse/JsonParse.ts" -> "nodejs/json-parse/JsonParse.js".
 const entry = collectEntryPoints();
 
 export default defineConfig({
@@ -24,8 +24,8 @@ export default defineConfig({
   target: "es2020",
   splitting: false,
   treeshake: true,
-  outDir: "dist",
-  ignoreWatch: ["dist", "node_modules", "**/*.d.ts"]
+  outDir: "nodejs",
+  ignoreWatch: ["dist", "nodejs", "node_modules", "**/*.d.ts"]
 });
 
 // Walk the project tree to build a { "relative/path": "relative/path.ts" } map for tsup.
@@ -55,7 +55,7 @@ function collectEntryPoints(startDir: string = ROOT) {
       if (EXCLUDED_FILE_PATTERNS.some((pattern) => pattern.test(posixRelPath))) continue;
 
       // Use the relative file path (minus extension) as the entry key so the output filename
-      // carries the same nested directory structure under dist/.
+      // carries the same nested directory structure under nodejs/.
       const entryName = posixRelPath.replace(/\.ts$/, "");
       entries[entryName] = posixRelPath;
     }

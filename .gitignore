@@ -1,3 +1,5 @@
 node_modules
-dist
+nodejs
+native
 .perry-cache
+.test-output

@@ -2,15 +2,15 @@
   "name": "perry-test",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "nodejs/index.cjs",
+  "module": "nodejs/index.js",
+  "types": "nodejs/index.d.ts",
   "files": [
-    "dist"
+    "nodejs"
   ],
   "scripts": {
     "build": "tsup --format esm,cjs --dts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf nodejs"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

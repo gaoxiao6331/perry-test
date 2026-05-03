@@ -21,7 +21,7 @@ class JSONParseError extends Error {
 export class JSONParser {
   private i = 0;
   private str = "";
-  constructor(private debugEnabled = false) {}
+  private readonly debugEnabled = false;
 
   parse(input: string): JSONValue {
     this.str = input;
