@@ -1,0 +1,164 @@
+{
+  "meta": {
+    "name": "demo_dataset",
+    "version": "1.0.0",
+    "createdAt": "2026-05-03T00:00:00Z",
+    "tags": ["test", "json", "large", "sample"],
+    "description": "A large JSON sample for parser testing"
+  },
+  "users": [
+    {
+      "id": 1,
+      "name": "Alice",
+      "age": 28,
+      "email": "alice@example.com",
+      "active": true,
+      "roles": ["admin", "editor"],
+      "profile": {
+        "address": {
+          "country": "US",
+          "state": "CA",
+          "city": "Los Angeles",
+          "zip": "90001"
+        },
+        "social": {
+          "github": "alicehub",
+          "twitter": "@alice"
+        }
+      },
+      "scores": [98.5, 87.2, 91.0]
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "age": 31,
+      "email": "bob@example.com",
+      "active": false,
+      "roles": ["viewer"],
+      "profile": {
+        "address": {
+          "country": "US",
+          "state": "NY",
+          "city": "New York",
+          "zip": "10001"
+        },
+        "social": {
+          "github": "bobdev",
+          "twitter": "@bob"
+        }
+      },
+      "scores": [72.1, 65.3, 88.8]
+    },
+    {
+      "id": 3,
+      "name": "Charlie",
+      "age": 24,
+      "email": "charlie@example.com",
+      "active": true,
+      "roles": ["editor"],
+      "profile": {
+        "address": {
+          "country": "UK",
+          "state": "London",
+          "city": "London",
+          "zip": "EC1A"
+        },
+        "social": {
+          "github": "charliegit",
+          "twitter": "@charlie"
+        }
+      },
+      "scores": [90.0, 93.5, 88.0]
+    }
+  ],
+  "products": [
+    {
+      "id": "p1001",
+      "name": "Laptop Pro",
+      "price": 1999.99,
+      "stock": 42,
+      "attributes": {
+        "cpu": "M3",
+        "ram": "16GB",
+        "storage": "512GB"
+      },
+      "tags": ["electronics", "computer", "premium"]
+    },
+    {
+      "id": "p1002",
+      "name": "Mechanical Keyboard",
+      "price": 129.99,
+      "stock": 120,
+      "attributes": {
+        "switch": "blue",
+        "layout": "US",
+        "backlight": true
+      },
+      "tags": ["accessory", "keyboard"]
+    }
+  ],
+  "orders": [
+    {
+      "orderId": "o-001",
+      "userId": 1,
+      "items": [
+        { "productId": "p1001", "quantity": 1, "price": 1999.99 },
+        { "productId": "p1002", "quantity": 2, "price": 129.99 }
+      ],
+      "total": 2259.97,
+      "status": "paid",
+      "createdAt": "2026-05-01T10:00:00Z"
+    },
+    {
+      "orderId": "o-002",
+      "userId": 2,
+      "items": [
+        { "productId": "p1002", "quantity": 1, "price": 129.99 }
+      ],
+      "total": 129.99,
+      "status": "pending",
+      "createdAt": "2026-05-02T12:30:00Z"
+    }
+  ],
+  "logs": [
+    {
+      "ts": 1714710000,
+      "level": "info",
+      "message": "system started",
+      "service": "core"
+    },
+    {
+      "ts": 1714713600,
+      "level": "warn",
+      "message": "high memory usage",
+      "service": "worker"
+    },
+    {
+      "ts": 1714717200,
+      "level": "error",
+      "message": "failed to fetch data",
+      "service": "api",
+      "error": {
+        "code": 500,
+        "stack": "Error: timeout\n    at fetchData()"
+      }
+    }
+  ],
+  "matrix": [
+    [1, 2, 3, 4, 5],
+    [6, 7, 8, 9, 10],
+    [11, 12, 13, 14, 15]
+  ],
+  "config": {
+    "featureFlags": {
+      "enableLogin": true,
+      "enableCache": true,
+      "enableAI": false
+    },
+    "limits": {
+      "maxUsers": 1000,
+      "maxOrders": 5000,
+      "timeoutMs": 3000
+    }
+  }
+}
