@@ -37,21 +37,25 @@ const filePath = path.resolve(process.cwd(), fileArg);
 const jsonParser = new JSONParser();
 const jsonText = fs.readFileSync(filePath, "utf-8");
 
-// 解析
-const parseStart = process.hrtime.bigint();
-const parsedValue = jsonParser.parse(jsonText);
-const parseEnd = process.hrtime.bigint();
-const parseDurationMs = Number(parseEnd - parseStart) / 1_000_000;
+// 解析（自定义解析器）
+const customParseStart = process.hrtime.bigint();
+const customParsedValue = jsonParser.parse(jsonText);
+const customParseEnd = process.hrtime.bigint();
+const customParseDurationMs = Number(customParseEnd - customParseStart) / 1_000_000;
 
-const parseTimeMessage = `Parse time: ${parseDurationMs.toFixed(3)} ms`;
-const stdout = process.stdout;
-stdout.write(Buffer.from([0x1b, 0x5b, 0x31, 0x3b, 0x33, 0x35, 0x6d])); // ESC[1;35m
-stdout.write(Buffer.from(parseTimeMessage));
-stdout.write(Buffer.from([0x1b, 0x5b, 0x30, 0x6d, 0x0a])); // ESC[0m + newline
+// 解析（原生 JSON.parse）
+const nativeParseStart = process.hrtime.bigint();
+const nativeParsedValue = JSON.parse(jsonText);
+const nativeParseEnd = process.hrtime.bigint();
+const nativeParseDurationMs = Number(nativeParseEnd - nativeParseStart) / 1_000_000;
 
-const customOutputJson = JSON.stringify(parsedValue, null, 2);
+const ESC = String.fromCharCode(0x1b);
+console.log(`${ESC}[1;35mCustom parse time: ${customParseDurationMs.toFixed(3)} ms${ESC}[0m`);
+console.log(`${ESC}[1;34mBuiltin parse time: ${nativeParseDurationMs.toFixed(3)} ms${ESC}[0m`);
 
-const builtinOutputJson = JSON.stringify(JSON.parse(jsonText), null, 2);
+const customOutputJson = JSON.stringify(customParsedValue, null, 2);
+
+const builtinOutputJson = JSON.stringify(nativeParsedValue, null, 2);
 
 // 写数据到文件
 if (outputDirArg) {
