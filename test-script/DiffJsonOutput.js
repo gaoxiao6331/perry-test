@@ -12,6 +12,7 @@ const nativeOutputArg = path.join(outputRoot, "native");
 const nodeOutputDir = path.resolve(nodeOutputArg);
 const nativeOutputDir = path.resolve(nativeOutputArg);
 const nativeBinary = path.resolve(process.env.NATIVE_BINARY ?? "./native/Main");
+const nodeDisableJit = process.env.NODE_DISABLE_JIT === "1";
 
 const customSuffix = `${inputFile}_custom.json`;
 const builtinSuffix = `${inputFile}_builtin.json`;
@@ -45,7 +46,12 @@ const buildNode = () => run("pnpm", ["build"]); // 构建 Node 版本
 
 const runNode = () => {
   resetDir(nodeOutputDir);
-  run("node", [nodeMain, inputFile, nodeOutputArg], {
+  const nodeArgs = [nodeMain, inputFile, nodeOutputArg];
+  if (nodeDisableJit) {
+    nodeArgs.unshift("--jitless");
+    console.log("\x1b[33mNode JIT disabled (--jitless)\x1b[0m");
+  }
+  run("node", nodeArgs, {
     env: { ...process.env, FORCE_COLOR: "1" }
   }); // 运行 Node 主程序
   diffPair(
