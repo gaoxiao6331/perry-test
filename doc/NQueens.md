@@ -48,6 +48,16 @@ To keep the cross-language comparison fair, the test harness enables aggressive 
 - **C++**: `clang++ -std=c++20 -O3 -DNDEBUG -flto=thin -mcpu=native -fomit-frame-pointer`.
 - **Rust**: the workspace release profile enables ThinLTO, single codegen unit, panic abort, stripping, and per-machine tuning via `.cargo/config.toml` (`-Ctarget-cpu=native`).
 
+## Experimental setup
+
+- Board size: `BOARD_SIZE=16`; `MAX_SOLUTIONS` left unset so the solver enumerates and counts every solution.
+- Host environment: macOS on Apple Silicon with the repository's toolchains installed locally.
+- Node.js 20.x with `pnpm build` (tsup) producing the JavaScript bundle executed with V8 JIT enabled.
+- Perry CLI compiling `./n-queens/Main.ts` to a native binary using the default release profile.
+- Go 1.24 toolchain via `go build -trimpath -ldflags "-s -w"` targeting `./n-queens/go`.
+- `clang++` (C++20) invocation shown above building `./n-queens/cpp/main.cpp` with ThinLTO and machine-native tuning.
+- Rust workspace built with `cargo build --release -p nqueens`, inheriting the optimized release profile from `Cargo.toml`.
+
 ## Output
 
 Each run writes a JSON summary that includes:
@@ -60,3 +70,19 @@ Each run writes a JSON summary that includes:
 - `solveDurationMs` / `countDurationMs`: timing information for enumeration and counting
 
 Running with `mode=all` diffs the Node.js, Perry native, and Go JSON outputs, surfacing any discrepancies in the solver implementation or runtime behavior.
+
+## Results (N=16)
+
+![Timing comparison for N=16](./img/16-queens.png)
+
+
+## Runtime environment
+
+- Hardware: MacBook Pro 14-inch (Apple Silicon M4 Pro)
+- Operating system: macOS 26.1 (build 25B78)
+- Node.js: v20.19.5
+- Perry CLI: 0.5.465
+- Go: go1.24.7 darwin/arm64
+- Cargo: 1.92.0 (344c4567c 2025-10-21)
+- rustc: 1.92.0 (ded5c06cf 2025-12-08)
+- clang++: Apple clang version 17.0.0 (clang-1700.6.3.2)
