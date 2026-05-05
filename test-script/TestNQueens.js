@@ -5,9 +5,10 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 
 const mode = process.argv[2] ?? "all";
-const boardSizeEnv = process.env.BOARD_SIZE ?? "14";
+const boardSizeEnv = process.env.BOARD_SIZE ?? "15";
 const maxSolutionsEnv = process.env.MAX_SOLUTIONS;
 const nativeBinary = path.resolve(process.env.NATIVE_BINARY ?? "./native/NQueens");
+const goBinary = path.resolve(process.env.GO_BINARY ?? "./n-queens/bin/nqueens");
 const nodeDisableJit = process.env.NODE_DISABLE_JIT === "1";
 
 const boardSize = Number(boardSizeEnv);
@@ -71,35 +72,68 @@ const runNativeSolver = () => {
   return execJson(nativeBinary, args);
 };
 
+const buildGo = () => {
+  mkdirSync(path.dirname(goBinary), { recursive: true });
+  execInherit("go", ["build", "-o", goBinary, "./n-queens/go"]);
+};
+
+const runGoSolver = () => {
+  const args = ["--json", String(boardSize)];
+  if (maxSolutions !== undefined) {
+    args.push(String(maxSolutions));
+  }
+  return execJson(goBinary, args);
+};
+
 const printResult = (label, result) => {
   console.log(`\n${label} result:`);
   console.log(JSON.stringify(result, null, 2));
 };
 
-const compareResults = (nodeResult, nativeResult) => {
-  const fields = ["enumeratedSolutions", "totalSolutions", "limitReached", "exploredStates", "maxSolutions"];
-  const mismatches = fields.filter((field) => {
-    const nodeValue = nodeResult[field] ?? null;
-    const nativeValue = nativeResult[field] ?? null;
-    return nodeValue !== nativeValue;
-  });
+const compareResults = (results) => {
+  if (results.length < 2) return;
 
-  if (mismatches.length === 0) {
-    console.log("\x1b[32m✔ Node.js and native results match for all key fields.\x1b[0m");
-  } else {
-    console.log("\x1b[31m✖ Differences detected:\x1b[0m");
-    for (const field of mismatches) {
-      console.log(`  ${field}: node=${nodeResult[field]} native=${nativeResult[field]}`);
+  const fields = ["enumeratedSolutions", "totalSolutions", "limitReached", "exploredStates", "maxSolutions"];
+  const [baseline, ...others] = results;
+  let hasMismatch = false;
+
+  for (const current of others) {
+    const mismatchedFields = fields.filter((field) => {
+      const baseValue = baseline.result[field] ?? null;
+      const currentValue = current.result[field] ?? null;
+      return baseValue !== currentValue;
+    });
+
+    if (mismatchedFields.length === 0) {
+      continue;
+    }
+
+    if (!hasMismatch) {
+      console.log("\x1b[31m✖ Differences detected:\x1b[0m");
+      hasMismatch = true;
+    }
+
+    console.log(`  vs ${current.label}:`);
+    for (const field of mismatchedFields) {
+      console.log(
+        `    ${field}: ${baseline.label}=${baseline.result[field]} ${current.label}=${current.result[field]}`
+      );
     }
   }
 
+  if (!hasMismatch) {
+    const labels = results.map(({ label }) => label).join(", ");
+    console.log(`\x1b[32m✔ ${labels} results match for all key fields.\x1b[0m`);
+  }
+
   console.log("\nTiming (ms):");
-  console.log(
-    `  Node.js   -> solve: ${nodeResult.solveDurationMs?.toFixed(3) ?? "n/a"}, count: ${nodeResult.countDurationMs?.toFixed(3) ?? "n/a"}`
-  );
-  console.log(
-    `  Native    -> solve: ${nativeResult.solveDurationMs?.toFixed(3) ?? "n/a"}, count: ${nativeResult.countDurationMs?.toFixed(3) ?? "n/a"}`
-  );
+  for (const { label, result } of results) {
+    console.log(
+      `  ${label.padEnd(9)} -> solve: ${result.solveDurationMs?.toFixed(3) ?? "n/a"}, count: ${
+        result.countDurationMs?.toFixed(3) ?? "n/a"
+      }`
+    );
+  }
 };
 
 switch (mode) {
@@ -115,14 +149,27 @@ switch (mode) {
     printResult("Native", nativeResult);
     break;
   }
+  case "go": {
+    buildGo();
+    const goResult = runGoSolver();
+    printResult("Go", goResult);
+    break;
+  }
   case "all": {
     buildNode();
     const nodeResult = runNodeSolver();
     buildNative();
     const nativeResult = runNativeSolver();
+    buildGo();
+    const goResult = runGoSolver();
     printResult("Node.js", nodeResult);
     printResult("Native", nativeResult);
-    compareResults(nodeResult, nativeResult);
+    printResult("Go", goResult);
+    compareResults([
+      { label: "Node.js", result: nodeResult },
+      { label: "Native", result: nativeResult },
+      { label: "Go", result: goResult },
+    ]);
     break;
   }
   default:

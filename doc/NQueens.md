@@ -10,7 +10,8 @@ node ./test-script/TestNQueens.js [mode]
 
 - `node`: build the TypeScript bundles and execute the Node.js variant only
 - `native`: compile and execute the Perry native binary only
-- `all` (default): run both targets and compare their JSON outputs
+- `go`: compile and execute the Go implementation only
+- `all` (default): run every target and compare their JSON outputs
 
 Example:
 
@@ -26,6 +27,7 @@ BOARD_SIZE=12 MAX_SOLUTIONS=20 node ./test-script/TestNQueens.js all
 | `MAX_SOLUTIONS` | unset | Upper bound for the number of solutions to enumerate; leave unset to enumerate every solution |
 | `OUTPUT_ROOT` | `.test-output` | Root directory for generated outputs (per target) |
 | `NATIVE_BINARY` | `./native/NQueens` | Output path for the Perry-compiled binary |
+| `GO_BINARY` | `./n-queens/bin/nqueens` | Output path for the Go binary |
 | `NODE_DISABLE_JIT` | unset | When set to `1`, adds `--jitless` to the Node.js invocation to disable the V8 JIT |
 
 ## Output
@@ -39,4 +41,4 @@ Each run writes a JSON summary that includes:
 - `exploredStates`: total nodes explored while enumerating solutions
 - `solveDurationMs` / `countDurationMs`: timing information for enumeration and counting
 
-Running with `mode=all` diffs the Node.js and native JSON outputs, surfacing any discrepancies in the solver implementation or runtime behavior.
+Running with `mode=all` diffs the Node.js, Perry native, and Go JSON outputs, surfacing any discrepancies in the solver implementation or runtime behavior.

@@ -3,3 +3,4 @@ nodejs
 native
 .perry-cache
 .test-output
+n-queens/bin
