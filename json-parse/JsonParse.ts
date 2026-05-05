@@ -1,4 +1,4 @@
-type JSONValue =
+export type JSONValue =
   | string
   | number
   | boolean
@@ -6,11 +6,19 @@ type JSONValue =
   | JSONObject
   | JSONArray;
 
-interface JSONObject {
+export interface JSONObject {
   [key: string]: JSONValue;
 }
 
-interface JSONArray extends Array<JSONValue> {}
+export interface JSONArray extends Array<JSONValue> {}
+
+type LogFunction = (message: string) => void;
+
+export interface JSONParserOptions {
+  debug?: boolean;
+  logInterval?: number;
+  log?: LogFunction;
+}
 
 class JSONParseError extends Error {
   constructor(message: string, public index: number) {
@@ -21,17 +29,34 @@ class JSONParseError extends Error {
 export class JSONParser {
   private i = 0;
   private str = "";
+  private lastLoggedIndex = -1;
+  private readonly debugEnabled: boolean;
+  private readonly logInterval: number;
+  private readonly logFn: LogFunction | null;
 
-  parse(input: string): JSONValue {
+  constructor(options: JSONParserOptions = {}) {
+    this.debugEnabled = !!options.debug;
+    this.logInterval = Math.max(1, options.logInterval ?? 5000);
+    this.logFn = this.debugEnabled
+      ? options.log ?? ((message) => console.error(message))
+      : null;
+  }
+
+  parse<TParsed = JSONValue>(input: string): TParsed {
     this.str = input;
     this.i = 0;
+    this.lastLoggedIndex = -1;
 
-    const value = this.parseValue();
+    this.log("parse:start");
+
+    const value = this.parseValue() as TParsed;
     this.skipWhitespace();
 
     if (this.i < this.str.length) {
       throw new JSONParseError("Unexpected trailing characters", this.i);
     }
+
+    this.log("parse:complete");
     return value;
   }
 
@@ -151,30 +176,31 @@ export class JSONParser {
   private parseString(): string {
     this.expect('"');
 
-    let result = "";
+    const chars: string[] = [];
 
     while (this.i < this.str.length) {
-      const ch = this.str[this.i++];
+      const code = this.str.charCodeAt(this.i++);
 
-      if (ch === '"') {
-        return result;
+      if (code === 0x22) {
+        return chars.join("");
       }
 
-      if (ch === '\\') {
+      if (code === 0x5c) {
         if (this.i >= this.str.length) {
           throw new JSONParseError("Unterminated escape sequence", this.i);
         }
-        const esc = this.str[this.i++];
-        switch (esc) {
-          case '"': result += '"'; break;
-          case '\\': result += '\\'; break;
-          case '/': result += '/'; break;
-          case 'b': result += '\b'; break;
-          case 'f': result += '\f'; break;
-          case 'n': result += '\n'; break;
-          case 'r': result += '\r'; break;
-          case 't': result += '\t'; break;
-          case 'u':
+
+        const escCode = this.str.charCodeAt(this.i++);
+        switch (escCode) {
+          case 0x22: chars.push('"'); break;
+          case 0x5c: chars.push('\\'); break;
+          case 0x2f: chars.push('/'); break;
+          case 0x62: chars.push('\b'); break;
+          case 0x66: chars.push('\f'); break;
+          case 0x6e: chars.push('\n'); break;
+          case 0x72: chars.push('\r'); break;
+          case 0x74: chars.push('\t'); break;
+          case 0x75: {
             if (this.i + 4 > this.str.length) {
               throw new JSONParseError("Incomplete unicode escape", this.i);
             }
@@ -182,14 +208,15 @@ export class JSONParser {
             if (!/^[0-9a-fA-F]{4}$/.test(hex)) {
               throw new JSONParseError("Invalid unicode escape", this.i);
             }
-            result += String.fromCharCode(parseInt(hex, 16));
+            chars.push(String.fromCharCode(parseInt(hex, 16)));
             this.i += 4;
             break;
+          }
           default:
-            throw new JSONParseError(`Invalid escape \\${esc}`, this.i);
+            throw new JSONParseError(`Invalid escape \\${String.fromCharCode(escCode)}`, this.i);
         }
       } else {
-        result += ch;
+        chars.push(String.fromCharCode(code));
       }
     }
 
@@ -197,41 +224,75 @@ export class JSONParser {
   }
 
   private parseNumber(): number {
-    const start = this.i;
+    const startIndex = this.i;
 
-    if (this.i < this.str.length && this.str[this.i] === '-') {
+    if (this.i < this.str.length && this.str.charCodeAt(this.i) === 0x2d) {
       this.i++;
       if (this.i >= this.str.length) {
         throw new JSONParseError("Expected digit", this.i);
       }
     }
 
-    this.consumeDigits();
-
-    if (this.i < this.str.length && this.str[this.i] === '.') {
-      this.i++;
-      this.consumeDigits();
+    if (this.i >= this.str.length || !this.isDigit(this.str[this.i])) {
+      throw new JSONParseError("Expected digit", this.i);
     }
 
-    if (this.i < this.str.length && (this.str[this.i] === 'e' || this.str[this.i] === 'E')) {
+    // integer part
+    if (this.str.charCodeAt(this.i) === 0x30) {
       this.i++;
-      if (this.i < this.str.length && (this.str[this.i] === '+' || this.str[this.i] === '-')) {
+      while (this.i < this.str.length && this.isDigit(this.str[this.i])) {
         this.i++;
       }
-      this.consumeDigits();
+    } else {
+      while (this.i < this.str.length && this.isDigit(this.str[this.i])) {
+        this.i++;
+      }
     }
 
-    const numStr = this.str.slice(start, this.i);
+    // fraction
+    if (this.i < this.str.length && this.str.charCodeAt(this.i) === 0x2e) {
+      this.i++;
+      if (this.i >= this.str.length || !this.isDigit(this.str[this.i])) {
+        throw new JSONParseError("Expected digit", this.i);
+      }
+      while (this.i < this.str.length && this.isDigit(this.str[this.i])) {
+        this.i++;
+      }
+    }
+
+    // exponent
+    if (this.i < this.str.length) {
+      const code = this.str.charCodeAt(this.i);
+      if (code === 0x65 || code === 0x45) {
+        this.i++;
+        if (this.i < this.str.length) {
+          const signCode = this.str.charCodeAt(this.i);
+          if (signCode === 0x2b || signCode === 0x2d) {
+            this.i++;
+          }
+        }
+
+        if (this.i >= this.str.length || !this.isDigit(this.str[this.i])) {
+          throw new JSONParseError("Expected digit", this.i);
+        }
+
+        while (this.i < this.str.length && this.isDigit(this.str[this.i])) {
+          this.i++;
+        }
+      }
+    }
+
+    const numStr = this.str.slice(startIndex, this.i);
     const num = Number(numStr);
 
-    if (Number.isNaN(num)) {
-      throw new JSONParseError("Invalid number", start);
+    if (!Number.isFinite(num)) {
+      throw new JSONParseError("Invalid number", startIndex);
     }
 
     return num;
   }
 
-  private parseLiteral(expected: string, value: any): any {
+  private parseLiteral<TLiteral extends JSONValue>(expected: string, value: TLiteral): TLiteral {
     if (this.str.startsWith(expected, this.i)) {
       this.i += expected.length;
       return value;
@@ -239,19 +300,19 @@ export class JSONParser {
     throw new JSONParseError(`Expected ${expected}`, this.i);
   }
 
-  private consumeDigits() {
-    const start = this.i;
-    while (this.i < this.str.length && this.isDigit(this.str[this.i])) {
-      this.i++;
-    }
-    if (start === this.i) {
-      throw new JSONParseError("Expected digit", this.i);
-    }
-  }
-
   private skipWhitespace() {
-    while (this.i < this.str.length && /\s/.test(this.str[this.i])) {
-      this.i++;
+    while (this.i < this.str.length) {
+      const code = this.str.charCodeAt(this.i);
+      if (
+        code === 0x20 || // space
+        code === 0x0a || // line feed
+        code === 0x0d || // carriage return
+        code === 0x09 // horizontal tab
+      ) {
+        this.i++;
+        continue;
+      }
+      break;
     }
   }
 
@@ -270,6 +331,12 @@ export class JSONParser {
   }
 
   private isDigit(ch: string): boolean {
-    return ch >= "0" && ch <= "9";
+    const code = ch.charCodeAt(0);
+    return code >= 0x30 && code <= 0x39;
+  }
+
+  private log(message: string) {
+    if (!this.debugEnabled) return;
+    this.logFn?.(message);
   }
 }
