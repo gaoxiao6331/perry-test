@@ -4,6 +4,8 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
+process.env.NODE_ENV ??= "production";
+
 const mode = process.argv[2] ?? "all";
 const boardSizeEnv = process.env.BOARD_SIZE ?? "16";
 const maxSolutionsEnv = process.env.MAX_SOLUTIONS;
@@ -31,8 +33,13 @@ if (maxSolutionsEnv !== undefined) {
 
 const nodeMain = path.resolve("nodejs/n-queens/Main.js");
 
-const execInherit = (cmd, args) => {
-  execFileSync(cmd, args, { stdio: "inherit" });
+const execInherit = (cmd, args, options = {}) => {
+  const { env: extraEnv, ...rest } = options;
+  execFileSync(cmd, args, {
+    stdio: "inherit",
+    ...rest,
+    env: { ...process.env, ...extraEnv },
+  });
 };
 
 const execJson = (cmd, args) => {
@@ -46,7 +53,26 @@ const execJson = (cmd, args) => {
   return JSON.parse(jsonSegment);
 };
 
-const buildNode = () => execInherit("pnpm", ["build"]);
+const formatDuration = (durationMs) => {
+  if (typeof durationMs !== "number" || Number.isNaN(durationMs)) {
+    return "n/a";
+  }
+
+  if (durationMs >= 10_000) {
+    const seconds = durationMs / 1000;
+    return `${seconds.toLocaleString(undefined, {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
+    })} s`;
+  }
+
+  return `${durationMs.toLocaleString(undefined, {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  })} ms`;
+};
+
+const buildNode = () => execInherit("pnpm", ["build"], { env: { NODE_ENV: "production" } });
 
 const runNodeSolver = () => {
   const args = [nodeMain, "--json", String(boardSize)];
@@ -76,7 +102,15 @@ const runNativeSolver = () => {
 
 const buildGo = () => {
   mkdirSync(path.dirname(goBinary), { recursive: true });
-  execInherit("go", ["build", "-o", goBinary, "./n-queens/go"]);
+  execInherit("go", [
+    "build",
+    "-trimpath",
+    "-ldflags",
+    "-s -w",
+    "-o",
+    goBinary,
+    "./n-queens/go",
+  ]);
 };
 
 const runGoSolver = () => {
@@ -93,6 +127,9 @@ const buildCpp = () => {
     "-std=c++20",
     "-O3",
     "-DNDEBUG",
+    "-flto=thin",
+    "-mcpu=native",
+    "-fomit-frame-pointer",
     "./n-queens/cpp/main.cpp",
     "-o",
     cppBinary,
@@ -125,6 +162,9 @@ const runRustSolver = () => {
 const printResult = (label, result) => {
   console.log(`\n${label} result:`);
   console.log(JSON.stringify(result, null, 2));
+  console.log(
+    `  solve: ${formatDuration(result.solveDurationMs)}, count: ${formatDuration(result.countDurationMs)}`
+  );
 };
 
 const compareResults = (results) => {
@@ -166,9 +206,9 @@ const compareResults = (results) => {
   console.log("\nTiming (ms):");
   for (const { label, result } of results) {
     console.log(
-      `  ${label.padEnd(9)} -> solve: ${result.solveDurationMs?.toFixed(3) ?? "n/a"}, count: ${
-        result.countDurationMs?.toFixed(3) ?? "n/a"
-      }`
+      `  ${label.padEnd(9)} -> solve: ${formatDuration(result.solveDurationMs)}, count: ${formatDuration(
+        result.countDurationMs
+      )}`
     );
   }
 };

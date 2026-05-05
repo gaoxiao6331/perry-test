@@ -83,6 +83,42 @@ const resultPayload = {
   countDurationMs
 };
 
+function formatDuration(durationMs: number): string {
+  if (durationMs >= 10_000) {
+    return `${formatWithThousands(durationMs / 1000, 3)} s`;
+  }
+
+  return `${formatWithThousands(durationMs, 3)} ms`;
+}
+
+function formatWithThousands(value: number, fractionDigits: number): string {
+  const fixed = value.toFixed(fractionDigits);
+  const dotIndex = fixed.indexOf(".");
+  if (dotIndex === -1) {
+    return insertThousands(fixed);
+  }
+
+  const integerPart = fixed.slice(0, dotIndex);
+  const fractionalPart = fixed.slice(dotIndex);
+  return `${insertThousands(integerPart)}${fractionalPart}`;
+}
+
+function insertThousands(digits: string): string {
+  const isNegative = digits.startsWith("-");
+  const pureDigits = isNegative ? digits.slice(1) : digits;
+  if (pureDigits.length <= 3) {
+    return digits;
+  }
+
+  const parts: string[] = [];
+  for (let i = pureDigits.length; i > 0; i -= 3) {
+    const start = Math.max(0, i - 3);
+    parts.push(pureDigits.slice(start, i));
+  }
+  const grouped = parts.reverse().join(",");
+  return isNegative ? `-${grouped}` : grouped;
+}
+
 if (jsonOutput) {
   console.log(JSON.stringify(resultPayload));
   process.exit(0);
@@ -92,8 +128,8 @@ const ESC = String.fromCharCode(0x1b);
 console.log(`${ESC}[1;35mBoard size: ${boardSize}${ESC}[0m`);
 console.log(`${ESC}[1;32mEnumerated solutions: ${summary.enumeratedSolutions}${ESC}[0m`);
 console.log(`${ESC}[1;32mTotal solutions: ${totalSolutions}${ESC}[0m`);
-console.log(`${ESC}[1;34mSolve time: ${solveDurationMs.toFixed(3)} ms${ESC}[0m`);
-console.log(`${ESC}[1;34mCount time: ${countDurationMs.toFixed(3)} ms${ESC}[0m`);
+console.log(`${ESC}[1;34mSolve time: ${formatDuration(solveDurationMs)}${ESC}[0m`);
+console.log(`${ESC}[1;34mCount time: ${formatDuration(countDurationMs)}${ESC}[0m`);
 
 if (outputDirArg) {
   const outputDir = path.resolve(process.cwd(), outputDirArg);

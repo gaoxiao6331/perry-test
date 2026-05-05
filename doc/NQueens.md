@@ -11,7 +11,7 @@ node ./test-script/TestNQueens.js [mode]
 - `node`: build the TypeScript bundles and execute the Node.js variant only
 - `native`: compile and execute the Perry native binary only
 - `go`: compile and execute the Go implementation only
-- `cpp`: compile and execute the C++20 implementation with `clang++ -O3`
+- `cpp`: compile and execute the C++20 implementation with `clang++ -O3 -flto=thin -mcpu=native`
 - `rust`: compile and execute the Rust implementation with `cargo build --release`
   - Uses the shared workspace `cargo build --release -p nqueens`
 - `all` (default): run every target and compare their JSON outputs
@@ -38,6 +38,15 @@ BOARD_SIZE=12 MAX_SOLUTIONS=20 node ./test-script/TestNQueens.js all
 Ensure `clang++` (with C++20 support) and the Rust toolchain (`cargo`) are available in your `PATH` before using the `cpp`, `rust`, or `all` modes. The test runner invokes `clang++ -std=c++20 -O3 -DNDEBUG` for the C++ build and `cargo build --release` for Rust, then reuses the resulting binaries for subsequent runs.
 
 > Workspace note: `cargo` commands now run from the repository root where `Cargo.toml` declares a workspace. You can build the solver manually with `cargo build -p nqueens` or extend the workspace by adding new members under `[workspace]`.
+
+## Build optimizations
+
+To keep the cross-language comparison fair, the test harness enables aggressive production flags for every target:
+
+- **Node.js**: the bundles are built with `NODE_ENV=production` and esbuild minification via tsup.
+- **Go**: binaries are compiled with `go build -trimpath -ldflags "-s -w" ...` (Go already emits fully optimized machine code by default).
+- **C++**: `clang++ -std=c++20 -O3 -DNDEBUG -flto=thin -mcpu=native -fomit-frame-pointer`.
+- **Rust**: the workspace release profile enables ThinLTO, single codegen unit, panic abort, stripping, and per-machine tuning via `.cargo/config.toml` (`-Ctarget-cpu=native`).
 
 ## Output
 

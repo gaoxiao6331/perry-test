@@ -21,6 +21,7 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
+  minify: true,
   target: "es2020",
   splitting: false,
   treeshake: true,

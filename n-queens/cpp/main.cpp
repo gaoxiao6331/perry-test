@@ -260,6 +260,56 @@ std::string renderPrettyJson(const ResultPayload& payload) {
   return out.str();
 }
 
+std::string insertThousands(const std::string& digits) {
+  const std::size_t len = digits.size();
+  if (len <= 3) {
+    return digits;
+  }
+
+  std::string result;
+  result.reserve(len + len / 3);
+  std::size_t remainder = len % 3;
+  std::size_t index = 0;
+
+  if (remainder != 0) {
+    result.append(digits, 0, remainder);
+    index = remainder;
+    if (index < len) {
+      result.push_back(',');
+    }
+  }
+
+  for (; index < len; index += 3) {
+    if (index > 0) {
+      result.push_back(',');
+    }
+    result.append(digits, index, 3);
+  }
+
+  return result;
+}
+
+std::string formatWithThousands(double value) {
+  std::ostringstream oss;
+  oss << std::fixed << std::setprecision(3) << value;
+  std::string str = oss.str();
+  const std::size_t dotPos = str.find('.');
+  if (dotPos == std::string::npos) {
+    return insertThousands(str);
+  }
+
+  std::string formattedInteger = insertThousands(str.substr(0, dotPos));
+  return formattedInteger + str.substr(dotPos);
+}
+
+std::string formatDuration(double durationMs) {
+  if (durationMs >= 10'000.0) {
+    return formatWithThousands(durationMs / 1000.0) + " s";
+  }
+
+  return formatWithThousands(durationMs) + " ms";
+}
+
 void ensureOutputDirectory(const fs::path& dir) {
   std::error_code ec;
   fs::create_directories(dir, ec);
@@ -323,9 +373,10 @@ int main(int argc, char* argv[]) {
     std::cout << esc << "[1;32mEnumerated solutions: " << summary.enumeratedSolutions << esc
               << "[0m\n";
     std::cout << esc << "[1;32mTotal solutions: " << totalSolutions << esc << "[0m\n";
-    std::cout << std::fixed << std::setprecision(3);
-    std::cout << esc << "[1;34mSolve time: " << solveDurationMs << " ms" << esc << "[0m\n";
-    std::cout << esc << "[1;34mCount time: " << countDurationMs << " ms" << esc << "[0m\n";
+    std::cout << esc << "[1;34mSolve time: " << formatDuration(solveDurationMs) << esc
+              << "[0m\n";
+    std::cout << esc << "[1;34mCount time: " << formatDuration(countDurationMs) << esc
+              << "[0m\n";
 
     if (args.outputDir.has_value()) {
       writeJsonFile(*args.outputDir, args.boardSize, payload);

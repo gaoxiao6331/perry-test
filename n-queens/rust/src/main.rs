@@ -244,8 +244,60 @@ fn render_cli_output(payload: &ResultPayload) {
     println!("{esc}[1;35mBoard size: {}{esc}[0m", payload.size);
     println!("{esc}[1;32mEnumerated solutions: {}{esc}[0m", payload.enumeratedSolutions);
     println!("{esc}[1;32mTotal solutions: {}{esc}[0m", payload.totalSolutions);
-    println!("{esc}[1;34mSolve time: {:.3} ms{esc}[0m", payload.solveDurationMs);
-    println!("{esc}[1;34mCount time: {:.3} ms{esc}[0m", payload.countDurationMs);
+    println!(
+        "{esc}[1;34mSolve time: {}{esc}[0m",
+        format_duration(payload.solveDurationMs)
+    );
+    println!(
+        "{esc}[1;34mCount time: {}{esc}[0m",
+        format_duration(payload.countDurationMs)
+    );
+}
+
+fn format_duration(duration_ms: f64) -> String {
+    if duration_ms >= 10_000.0 {
+        return format!("{} s", format_with_thousands(duration_ms / 1000.0));
+    }
+    format!("{} ms", format_with_thousands(duration_ms))
+}
+
+fn format_with_thousands(value: f64) -> String {
+    let formatted = format!("{:.3}", value);
+    match formatted.split_once('.') {
+        Some((int_part, frac_part)) => format!("{}.{frac_part}", insert_thousands(int_part)),
+        None => insert_thousands(&formatted),
+    }
+}
+
+fn insert_thousands(value: &str) -> String {
+    let mut result = String::with_capacity(value.len() + value.len() / 3);
+    let mut chars = value.chars().filter(|c| *c != ',').collect::<Vec<_>>();
+    if chars.first() == Some(&'-') {
+        result.push('-');
+        chars.remove(0);
+    }
+    let len = chars.len();
+    if len <= 3 {
+        result.extend(chars);
+        return result;
+    }
+    let rem = len % 3;
+    let mut index = 0;
+    if rem != 0 {
+        result.extend(&chars[index..index + rem]);
+        index += rem;
+        if index < len {
+            result.push(',');
+        }
+    }
+    while index < len {
+        if index > rem {
+            result.push(',');
+        }
+        result.extend(&chars[index..index + 3]);
+        index += 3;
+    }
+    result
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

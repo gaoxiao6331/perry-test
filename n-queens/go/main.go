@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,46 @@ type resultPayload struct {
 	TotalSolutions      int     `json:"totalSolutions"`
 	SolveDurationMs     float64 `json:"solveDurationMs"`
 	CountDurationMs     float64 `json:"countDurationMs"`
+}
+
+func formatDuration(durationMs float64) string {
+	if durationMs >= 10000 {
+		seconds := durationMs / 1000
+		return fmt.Sprintf("%s s", formatWithThousands(seconds, 3))
+	}
+	return fmt.Sprintf("%s ms", formatWithThousands(durationMs, 3))
+}
+
+func formatWithThousands(value float64, precision int) string {
+	formatted := fmt.Sprintf("%.*f", precision, value)
+	if dot := strings.Index(formatted, "."); dot != -1 {
+		integerPart := formatted[:dot]
+		decimalPart := formatted[dot:]
+		return insertThousands(integerPart) + decimalPart
+	}
+	return insertThousands(formatted)
+}
+
+func insertThousands(s string) string {
+	n := len(s)
+	if n <= 3 {
+		return s
+	}
+	var result strings.Builder
+	pre := n % 3
+	if pre > 0 {
+		result.WriteString(s[:pre])
+		if pre < n {
+			result.WriteString(",")
+		}
+	}
+	for i := pre; i < n; i += 3 {
+		if i > pre {
+			result.WriteString(",")
+		}
+		result.WriteString(s[i : i+3])
+	}
+	return result.String()
 }
 
 type solveSummary struct {
@@ -144,8 +185,8 @@ func main() {
 	fmt.Printf("%s[1;35mBoard size: %d%s[0m\n", esc, boardSize, esc)
 	fmt.Printf("%s[1;32mEnumerated solutions: %d%s[0m\n", esc, summary.enumerated, esc)
 	fmt.Printf("%s[1;32mTotal solutions: %d%s[0m\n", esc, totalSolutions, esc)
-	fmt.Printf("%s[1;34mSolve time: %.3f ms%s[0m\n", esc, payload.SolveDurationMs, esc)
-	fmt.Printf("%s[1;34mCount time: %.3f ms%s[0m\n", esc, payload.CountDurationMs, esc)
+	fmt.Printf("%s[1;34mSolve time: %s%s[0m\n", esc, formatDuration(payload.SolveDurationMs), esc)
+	fmt.Printf("%s[1;34mCount time: %s%s[0m\n", esc, formatDuration(payload.CountDurationMs), esc)
 
 	if outputDirSet {
 		outputPath := filepath.Join(outputDir, fmt.Sprintf("n-queens_%d.json", boardSize))
