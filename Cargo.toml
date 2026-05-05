@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "n-queens/rust",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"

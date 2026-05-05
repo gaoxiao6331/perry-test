@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { copyFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
 const mode = process.argv[2] ?? "all";
-const boardSizeEnv = process.env.BOARD_SIZE ?? "15";
+const boardSizeEnv = process.env.BOARD_SIZE ?? "16";
 const maxSolutionsEnv = process.env.MAX_SOLUTIONS;
 const nativeBinary = path.resolve(process.env.NATIVE_BINARY ?? "./native/NQueens");
 const goBinary = path.resolve(process.env.GO_BINARY ?? "./n-queens/bin/nqueens");
+const cppBinary = path.resolve(process.env.CPP_BINARY ?? "./n-queens/bin/nqueens_cpp");
+const rustBinary = path.resolve(process.env.RUST_BINARY ?? "./n-queens/bin/nqueens_rust");
 const nodeDisableJit = process.env.NODE_DISABLE_JIT === "1";
 
 const boardSize = Number(boardSizeEnv);
@@ -85,6 +87,41 @@ const runGoSolver = () => {
   return execJson(goBinary, args);
 };
 
+const buildCpp = () => {
+  mkdirSync(path.dirname(cppBinary), { recursive: true });
+  execInherit("clang++", [
+    "-std=c++20",
+    "-O3",
+    "-DNDEBUG",
+    "./n-queens/cpp/main.cpp",
+    "-o",
+    cppBinary,
+  ]);
+};
+
+const runCppSolver = () => {
+  const args = ["--json", String(boardSize)];
+  if (maxSolutions !== undefined) {
+    args.push(String(maxSolutions));
+  }
+  return execJson(cppBinary, args);
+};
+
+const buildRust = () => {
+  execInherit("cargo", ["build", "--release", "-p", "nqueens"]);
+  const builtPath = path.resolve("./target/release/nqueens");
+  mkdirSync(path.dirname(rustBinary), { recursive: true });
+  copyFileSync(builtPath, rustBinary);
+};
+
+const runRustSolver = () => {
+  const args = ["--json", String(boardSize)];
+  if (maxSolutions !== undefined) {
+    args.push(String(maxSolutions));
+  }
+  return execJson(rustBinary, args);
+};
+
 const printResult = (label, result) => {
   console.log(`\n${label} result:`);
   console.log(JSON.stringify(result, null, 2));
@@ -155,6 +192,18 @@ switch (mode) {
     printResult("Go", goResult);
     break;
   }
+  case "cpp": {
+    buildCpp();
+    const cppResult = runCppSolver();
+    printResult("C++", cppResult);
+    break;
+  }
+  case "rust": {
+    buildRust();
+    const rustResult = runRustSolver();
+    printResult("Rust", rustResult);
+    break;
+  }
   case "all": {
     buildNode();
     const nodeResult = runNodeSolver();
@@ -162,13 +211,21 @@ switch (mode) {
     const nativeResult = runNativeSolver();
     buildGo();
     const goResult = runGoSolver();
+    buildCpp();
+    const cppResult = runCppSolver();
+    buildRust();
+    const rustResult = runRustSolver();
     printResult("Node.js", nodeResult);
     printResult("Native", nativeResult);
     printResult("Go", goResult);
+    printResult("C++", cppResult);
+    printResult("Rust", rustResult);
     compareResults([
       { label: "Node.js", result: nodeResult },
       { label: "Native", result: nativeResult },
       { label: "Go", result: goResult },
+      { label: "C++", result: cppResult },
+      { label: "Rust", result: rustResult },
     ]);
     break;
   }

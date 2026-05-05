@@ -11,6 +11,9 @@ node ./test-script/TestNQueens.js [mode]
 - `node`: build the TypeScript bundles and execute the Node.js variant only
 - `native`: compile and execute the Perry native binary only
 - `go`: compile and execute the Go implementation only
+- `cpp`: compile and execute the C++20 implementation with `clang++ -O3`
+- `rust`: compile and execute the Rust implementation with `cargo build --release`
+  - Uses the shared workspace `cargo build --release -p nqueens`
 - `all` (default): run every target and compare their JSON outputs
 
 Example:
@@ -28,7 +31,13 @@ BOARD_SIZE=12 MAX_SOLUTIONS=20 node ./test-script/TestNQueens.js all
 | `OUTPUT_ROOT` | `.test-output` | Root directory for generated outputs (per target) |
 | `NATIVE_BINARY` | `./native/NQueens` | Output path for the Perry-compiled binary |
 | `GO_BINARY` | `./n-queens/bin/nqueens` | Output path for the Go binary |
+| `CPP_BINARY` | `./n-queens/bin/nqueens_cpp` | Output path for the compiled C++ binary |
+| `RUST_BINARY` | `./n-queens/bin/nqueens_rust` | Output path for the compiled Rust binary |
 | `NODE_DISABLE_JIT` | unset | When set to `1`, adds `--jitless` to the Node.js invocation to disable the V8 JIT |
+
+Ensure `clang++` (with C++20 support) and the Rust toolchain (`cargo`) are available in your `PATH` before using the `cpp`, `rust`, or `all` modes. The test runner invokes `clang++ -std=c++20 -O3 -DNDEBUG` for the C++ build and `cargo build --release` for Rust, then reuses the resulting binaries for subsequent runs.
+
+> Workspace note: `cargo` commands now run from the repository root where `Cargo.toml` declares a workspace. You can build the solver manually with `cargo build -p nqueens` or extend the workspace by adding new members under `[workspace]`.
 
 ## Output
 

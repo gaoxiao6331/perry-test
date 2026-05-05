@@ -4,3 +4,9 @@ native
 .perry-cache
 .test-output
 n-queens/bin
+target
+*.o
+*.exe
+*.dll
+*.dylib
+*.so
