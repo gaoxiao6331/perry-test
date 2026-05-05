@@ -5,7 +5,7 @@ The handcrafted `JSONParser` is used to compare performance and output fidelity 
 ## How to run
 
 ```bash
-node ./test-script/DiffJsonOutput.js [mode]
+node ./test-script/TestJsonParse.js [mode]
 ```
 
 - `node`: build and execute the Node.js variant only
@@ -15,7 +15,7 @@ node ./test-script/DiffJsonOutput.js [mode]
 Example:
 
 ```bash
-node ./test-script/DiffJsonOutput.js all
+node ./test-script/TestJsonParse.js all
 ```
 
 ## Environment variables
@@ -33,7 +33,7 @@ Example:
 INPUT_FILE=./test-case/large.json \
 OUTPUT_ROOT=.bench-output \
 NODE_DISABLE_JIT=1 \
-node ./test-script/DiffJsonOutput.js node
+node ./test-script/TestJsonParse.js node
 ```
 
 ## Output
