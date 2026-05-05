@@ -1,33 +1,33 @@
 # JSON Parser Benchmark
 
-手写的 `JSONParser` 用于对比 Node.js (V8) 与 Perry 原生编译的性能与输出一致性。
+The handcrafted `JSONParser` is used to compare performance and output fidelity between Node.js (V8) and Perry's native compilation.
 
-## 运行
+## How to run
 
 ```bash
 node ./test-script/DiffJsonOutput.js [mode]
 ```
 
-- `node`：仅构建并运行 Node.js 版本
-- `native`：仅编译并运行 Perry 原生版本
-- `all`（默认）：依次执行两者并对比输出
+- `node`: build and execute the Node.js variant only
+- `native`: compile and execute the Perry native binary only
+- `all` (default): run both targets and compare their outputs
 
-示例：
+Example:
 
 ```bash
 node ./test-script/DiffJsonOutput.js all
 ```
 
-## 环境变量
+## Environment variables
 
-| 变量名 | 默认值 | 用途 |
+| Variable | Default | Purpose |
 | --- | --- | --- |
-| `INPUT_FILE` | `./test-case/JsonParse.json` | 指定输入 JSON 文件 |
-| `OUTPUT_ROOT` | `.test-output` | 存放输出目录 |
-| `NATIVE_BINARY` | `./native/Main` | Perry 编译的可执行文件路径 |
-| `NODE_DISABLE_JIT` | 未设置 | 设为 `1` 时 Node.js 运行追加 `--jitless`，禁用 V8 JIT |
+| `INPUT_FILE` | `./test-case/JsonParse.json` | Select the input JSON file |
+| `OUTPUT_ROOT` | `.test-output` | Root directory for generated outputs |
+| `NATIVE_BINARY` | `./native/Main` | Output path for the Perry-compiled binary |
+| `NODE_DISABLE_JIT` | unset | When set to `1`, adds `--jitless` to the Node.js invocation to disable the V8 JIT |
 
-示例：
+Example:
 
 ```bash
 INPUT_FILE=./test-case/large.json \
@@ -36,6 +36,6 @@ NODE_DISABLE_JIT=1 \
 node ./test-script/DiffJsonOutput.js node
 ```
 
-## 输出
+## Output
 
-脚本会清理输出目录，并使用 `git diff --no-index` 给出彩色 diff；当输出一致时显示绿色 `Files match`。
+The script rebuilds the output directories and uses `git diff --no-index` for colored diffs; when outputs match it prints a green `Files match` message.

@@ -4,9 +4,9 @@ import { execFileSync } from "node:child_process";
 import { rmSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
-const mode = process.argv[2] ?? "all"; // 支持 node/native/all 三种模式
-const inputFile = process.env.INPUT_FILE ?? "./test-case/JsonParse.json"; // 测试输入
-const outputRoot = process.env.OUTPUT_ROOT ?? ".test-output"; // 输出根目录
+const mode = process.argv[2] ?? "all"; // Supports node/native/all modes
+const inputFile = process.env.INPUT_FILE ?? "./test-case/JsonParse.json"; // Input fixture
+const outputRoot = process.env.OUTPUT_ROOT ?? ".test-output"; // Output root directory
 const nodeOutputArg = path.join(outputRoot, "nodejs");
 const nativeOutputArg = path.join(outputRoot, "native");
 const nodeOutputDir = path.resolve(nodeOutputArg);
@@ -18,12 +18,12 @@ const customSuffix = `${inputFile}_custom.json`;
 const builtinSuffix = `${inputFile}_builtin.json`;
 
 const run = (cmd, args, options) =>
-  execFileSync(cmd, args, { stdio: "inherit", ...options }); // 调用外部命令
+  execFileSync(cmd, args, { stdio: "inherit", ...options }); // Invoke external command
 
 const resetDir = (dir) => {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-}; // 清理再创建目录
+}; // Recreate the target directory from scratch
 
 const diffPair = (left, right) => {
   const diffArgs = ["diff", "--no-index", "--color=always", left, right];
@@ -32,17 +32,17 @@ const diffPair = (left, right) => {
     run("git", diffArgs, { env });
   } catch (error) {
     if (error.status === 1) {
-      return; // 有差异时 git diff 已输出颜色内容
+      return; // git diff already printed colored output when there are changes
     }
     throw error;
   }
-  // 无差异时手动输出绿色提示
+  // Emit a green message when the files match
   console.log(`\x1b[32mFiles match:\x1b[0m ${left} == ${right}`);
-}; // 颜色差异输出，无差异也提示
+}; // Provide colored diff and success hints
 
 const nodeMain = path.resolve("nodejs/json-parse/Main.js");
 
-const buildNode = () => run("pnpm", ["build"]); // 构建 Node 版本
+const buildNode = () => run("pnpm", ["build"]); // Build the Node.js artifacts
 
 const runNode = () => {
   resetDir(nodeOutputDir);
@@ -53,7 +53,7 @@ const runNode = () => {
   }
   run("node", nodeArgs, {
     env: { ...process.env, FORCE_COLOR: "1" }
-  }); // 运行 Node 主程序
+  }); // Execute the Node.js entry point
   diffPair(
     path.join(nodeOutputDir, customSuffix),
     path.join(nodeOutputDir, builtinSuffix)
@@ -63,13 +63,13 @@ const runNode = () => {
 const buildNative = () => {
   mkdirSync(path.dirname(nativeBinary), { recursive: true });
   run("perry", ["compile", "./json-parse/Main.ts", "-o", nativeBinary]);
-}; // 编译 Native 可执行文件
+}; // Compile the native executable via Perry
 
 const runNative = () => {
   resetDir(nativeOutputDir);
   run(nativeBinary, [inputFile, nativeOutputArg], {
     env: { ...process.env, FORCE_COLOR: "1" }
-  }); // 运行 Native 程序
+  }); // Execute the native binary
   diffPair(
     path.join(nativeOutputDir, customSuffix),
     path.join(nativeOutputDir, builtinSuffix)

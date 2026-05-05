@@ -6,7 +6,7 @@ const fileArg = process.argv[2];
 
 const outputDirArg = process.argv[3];
 
-// 解析路径，如果没有这个目录则创建
+// Create the output directory when it does not exist
 if (outputDirArg) {
   const outputDir = path.resolve(process.cwd(), outputDirArg);
   if (!fs.existsSync(outputDir)) {
@@ -14,7 +14,7 @@ if (outputDirArg) {
   }
 }
 
-// 如果这个目录不为空则报错
+// Abort if the output directory already contains files
 if (outputDirArg) {
   const outputDir = path.resolve(process.cwd(), outputDirArg);
   const files = fs.readdirSync(outputDir);
@@ -24,7 +24,7 @@ if (outputDirArg) {
   }
 }
 
-// 从命令行参数获取文件路径
+// Parse the input JSON path from CLI arguments
 
 if (!fileArg) {
   console.error("Usage: node test.js <json-file-path>");
@@ -33,17 +33,17 @@ if (!fileArg) {
 
 const filePath = path.resolve(process.cwd(), fileArg);
 
-// 读取文件
+// Read the input file into memory
 const jsonParser = new JSONParser();
 const jsonText = fs.readFileSync(filePath, "utf-8");
 
-// 解析（自定义解析器）
+// Parse with the custom JSON parser
 const customParseStart = process.hrtime.bigint();
 const customParsedValue = jsonParser.parse(jsonText);
 const customParseEnd = process.hrtime.bigint();
 const customParseDurationMs = Number(customParseEnd - customParseStart) / 1_000_000;
 
-// 解析（原生 JSON.parse）
+// Parse with the native JSON.parse implementation
 const nativeParseStart = process.hrtime.bigint();
 const nativeParsedValue = JSON.parse(jsonText);
 const nativeParseEnd = process.hrtime.bigint();
@@ -57,14 +57,14 @@ const customOutputJson = JSON.stringify(customParsedValue, null, 2);
 
 const builtinOutputJson = JSON.stringify(nativeParsedValue, null, 2);
 
-// 写数据到文件
+// Persist parser outputs to disk
 if (outputDirArg) {
   const outputDir = path.resolve(process.cwd(), outputDirArg);
   const customOutputPath = path.join(outputDir, fileArg + "_custom.json");
   fs.mkdirSync(path.dirname(customOutputPath), { recursive: true });
   fs.writeFileSync(customOutputPath, customOutputJson);
 
-  // 写原生的数据到文件
+  // Write the native parser output to disk
   const nativeOutputPath = path.join(outputDir, fileArg + "_builtin.json");
   fs.mkdirSync(path.dirname(nativeOutputPath), { recursive: true });
   fs.writeFileSync(nativeOutputPath, builtinOutputJson);

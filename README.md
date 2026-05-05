@@ -1,7 +1,7 @@
 # Perry TypeScript Native Experiments
 
-本仓库用于验证 [Perry](https://perry.run/) 将 TypeScript 直接编译为原生可执行文件的可行性与性能表现。
+This repository experiments with compiling TypeScript directly into native binaries using [Perry](https://www.perryts.com/en/blog/).
 
-目前的测试用例：
+Current test cases:
 
-- JSON 解析器：手写 JSONParser 对比 Node.js（带 V8 JIT）与 Perry 原生二进制[`doc/json-parse.md`](./doc/json-parse.md)。
+- JSON parser: custom JsonParser benchmarked against Node.js (V8 JIT enabled) and the Perry native binary – see [`doc/json-parse.md`](./doc/json-parse.md).
